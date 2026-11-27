@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3TN · Roblox Auto ChangePass 24/7</title>
+    <title>3TN HUB · Roblox Auto ChangePass 24/7</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -233,6 +233,8 @@
             margin-bottom: 6px;
             font-size: 0.84rem;
             color: var(--text-secondary);
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .badge-count {
@@ -333,19 +335,37 @@
         }
 
         .btn-sm {
-            padding: 7px 12px;
-            font-size: 0.78rem;
+            padding: 7px 11px;
+            font-size: 0.76rem;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.06);
             color: var(--text-primary);
             border: 1px solid var(--border-color);
             cursor: pointer;
             transition: 0.2s;
+            font-weight: 500;
         }
 
         .btn-sm:hover {
             border-color: var(--neon-cyan);
             color: var(--neon-cyan);
+        }
+
+        .btn-sm-die:hover {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        .btn-sm-faceid:hover {
+            border-color: var(--neon-amber);
+            color: var(--neon-amber);
+        }
+
+        .quick-copy-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
         }
 
         .stats-grid {
@@ -416,7 +436,7 @@
         .log-INFO { color: #cbd5e1; }
 
         .output-area {
-            min-height: 140px;
+            min-height: 135px;
             color: var(--neon-green);
         }
 
@@ -432,10 +452,10 @@
     <div class="container">
         <header class="navbar">
             <div class="brand">
-                <div class="brand-badge">3TN</div>
+                <div class="brand-badge">ZT</div>
                 <div class="brand-text">
                     <h1>ROBLOX AUTO CHANGEPASS</h1>
-                    <span>Working 24/7 · MULTI-THREADED</span>
+                    <span>24/7 WORKING · MULTI-THREADED</span>
                 </div>
             </div>
             <a href="{{ discord_url }}" target="_blank" rel="noopener noreferrer" class="discord-btn">
@@ -459,10 +479,10 @@
                 <div class="mode-switch">
                     <div class="mode-option active" id="modeDelayCard" onclick="selectMode('delay')">
                         <div class="mode-option-title">
-                            <span>Option 1: Retry 60s</span>
+                            <span>Option 1: 5 Acc / Lượt</span>
                             <span class="mode-tag">NO PROXY</span>
                         </div>
-                        <div class="mode-option-desc">Bị limit nghỉ 60s rồi đổi tiếp tới khi đổi được acc mới qua acc kế.</div>
+                        <div class="mode-option-desc">Chạy 5 acc/lần; dính limit nghỉ 60s rồi retry tới khi xong.</div>
                     </div>
 
                     <div class="mode-option" id="modeProxyCard" onclick="selectMode('proxy')">
@@ -571,11 +591,20 @@
                     <div class="label-row">
                         <span>Tài khoản đổi thành công (user:newpass:newcookie)</span>
                         <div style="display: flex; gap: 6px;">
-                            <button class="btn-sm" onclick="copyResults()">Copy</button>
+                            <button class="btn-sm" onclick="copyResults()">Copy Thành Công</button>
                             <button class="btn-sm" onclick="downloadResults()">Tải .TXT</button>
                         </div>
                     </div>
                     <textarea id="resultsOutput" class="output-area" readonly placeholder="Kết quả sẽ tự động hiển thị tại đây..."></textarea>
+
+                    <div class="quick-copy-row">
+                        <button class="btn-sm btn-sm-die" id="copyDieBtn" onclick="copyCookieDie()">
+                            Copy Die Cookie (0)
+                        </button>
+                        <button class="btn-sm btn-sm-faceid" id="copyFaceIdBtn" onclick="copyFaceId()">
+                            Copy FaceID (0)
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -586,6 +615,8 @@
         let activeJobId = null;
         let logOffset = 0;
         let pollTimer = null;
+        let cookieDieList = [];
+        let faceIdList = [];
 
         const accountsInput = document.getElementById('accountsInput');
         const proxiesInput = document.getElementById('proxiesInput');
@@ -624,6 +655,11 @@
             document.getElementById('customPassGroup').classList.toggle('hidden', val !== 'custom');
         }
 
+        function updateErrorCopyButtons() {
+            document.getElementById('copyDieBtn').textContent = `Copy Die Cookie (${cookieDieList.length})`;
+            document.getElementById('copyFaceIdBtn').textContent = `Copy FaceID (${faceIdList.length})`;
+        }
+
         function appendLog(text) {
             const box = document.getElementById('terminalBox');
             const div = document.createElement('div');
@@ -654,6 +690,9 @@
 
             document.getElementById('startBtn').disabled = true;
             document.getElementById('resultsOutput').value = '';
+            cookieDieList = [];
+            faceIdList = [];
+            updateErrorCopyButtons();
             clearLogs();
 
             try {
@@ -697,6 +736,10 @@
                 data.logs.forEach(line => appendLog(line));
                 logOffset = data.next_offset;
 
+                cookieDieList = data.cookie_die_list || [];
+                faceIdList = data.faceid_list || [];
+                updateErrorCopyButtons();
+
                 document.getElementById('statProcessed').textContent = `${data.processed}/${data.total}`;
                 document.getElementById('statSuccess').textContent = data.success;
                 document.getElementById('statFailed').textContent = data.failed;
@@ -727,7 +770,25 @@
             const box = document.getElementById('resultsOutput');
             if (!box.value) return;
             navigator.clipboard.writeText(box.value);
-            appendLog('[INFO] Đã sao chép danh sách tài khoản thành công vào bộ nhớ tạm.');
+            appendLog('[INFO] Đã sao chép danh sách tài khoản thành công.');
+        }
+
+        function copyCookieDie() {
+            if (!cookieDieList.length) {
+                appendLog('[WARN] Không có tài khoản nào bị Die Cookie.');
+                return;
+            }
+            navigator.clipboard.writeText(cookieDieList.join('\n'));
+            appendLog(`[INFO] Đã sao chép ${cookieDieList.length} tài khoản Die Cookie.`);
+        }
+
+        function copyFaceId() {
+            if (!faceIdList.length) {
+                appendLog('[WARN] Không có tài khoản nào dính FaceID.');
+                return;
+            }
+            navigator.clipboard.writeText(faceIdList.join('\n'));
+            appendLog(`[INFO] Đã sao chép ${faceIdList.length} tài khoản dính FaceID.`);
         }
 
         function downloadResults() {
