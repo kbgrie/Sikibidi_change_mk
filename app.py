@@ -191,7 +191,7 @@ def change_password_core(cookie, current_password, new_password, proxy_config=No
     except Exception as e:
         return False, f"Lỗi kết nối: {str(e)}"
 
-def generate_password(custom_password=None, prefix="TD"):
+def generate_password(custom_password=None, prefix="3TN"):
     if custom_password:
         return custom_password
     base_length = 11
@@ -353,7 +353,7 @@ def start_job():
     mode = data.get("mode", "delay")
     raw_proxies = data.get("proxies", "")
     pass_mode = data.get("pass_mode", "random")
-    prefix = (data.get("prefix") or "TD").strip()
+    prefix = (data.get("prefix") or "3TN").strip()
     custom_password = (data.get("custom_password") or "").strip()
     custom_threads = data.get("threads")
 
@@ -384,7 +384,7 @@ def start_job():
     else:
         custom_password = None
         if not prefix:
-            prefix = "TD"
+            prefix = "3TN"
 
     try:
         threads_int = int(custom_threads) if custom_threads else None
