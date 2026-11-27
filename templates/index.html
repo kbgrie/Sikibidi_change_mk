@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3TN HUB · Roblox Auto ChangePass 24/7</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #09090f;
+            --bg-card: #11121d;
+            --bg-input: #0c0d15;
+            --border-color: #1f2235;
+            --neon-purple: #8b5cf6;
+            --neon-cyan: #06b6d4;
+            --neon-green: #10b981;
+            --neon-red: #ef4444;
+            --neon-amber: #f59e0b;
+            --discord-blurple: #5865F2;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.10) 0%, transparent 40%);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            line-height: 1.5;
+            padding-bottom: 40px;
+        }
+
+        .container {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 18px 16px;
+        }
+
+        /* Navbar */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(17, 18, 29, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 14px 20px;
+            margin-bottom: 22px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            color: #fff;
+            box-shadow: 0 0 18px rgba(139, 92, 246, 0.45);
+        }
+
+        .brand-text h1 {
+            font-size: 1.08rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(90deg, #fff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text span {
+            font-size: 0.78rem;
+            color: var(--neon-cyan);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .discord-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--discord-blurple);
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.88rem;
+            padding: 10px 18px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 16px rgba(88, 101, 242, 0.4);
+        }
+
+        .discord-btn:hover {
+            transform: translateY(-2px);
+            background: #4752c4;
+            box-shadow: 0 6px 22px rgba(88, 101, 242, 0.6);
+        }
+
+        /* Grid Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        /* Mode Selector Cards */
+        .mode-switch {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        @media (max-width: 520px) {
+            .mode-switch {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .mode-option {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .mode-option:hover {
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+
+        .mode-option.active {
+            border-color: var(--neon-purple);
+            background: linear-gradient(145deg, rgba(139, 92, 246, 0.14), rgba(6, 182, 212, 0.06));
+            box-shadow: 0 0 18px rgba(139, 92, 246, 0.2);
+        }
+
+        .mode-option-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .mode-tag {
+            font-size: 0.7rem;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--neon-cyan);
+        }
+
+        .mode-option.active .mode-tag {
+            background: var(--neon-purple);
+            color: #fff;
+        }
+
+        .mode-option-desc {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 0.84rem;
+            color: var(--text-secondary);
+        }
+
+        .badge-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--neon-cyan);
+            background: rgba(6, 182, 212, 0.12);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        textarea, input[type="text"], input[type="number"], select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            padding: 12px;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        textarea:focus, input:focus, select:focus {
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 520px) {
+            .row-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 13px 18px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-purple), #6d28d9);
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(139, 92, 246, 0.35);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(139, 92, 246, 0.55);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--neon-red);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            flex: 0.45;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: var(--neon-red);
+            color: #fff;
+        }
+
+        .btn-sm {
+            padding: 7px 12px;
+            font-size: 0.78rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-sm:hover {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        /* Stats & Progress */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .stat-box {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .stat-lbl {
+            font-size: 0.73rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .progress-wrap {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-input);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
+            transition: width 0.3s ease;
+        }
+
+        /* Console Terminal */
+        .terminal {
+            background: #07080d;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            height: 230px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            line-height: 1.55;
+            margin-bottom: 16px;
+        }
+
+        .log-line {
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+
+        .log-SUCCESS, .log-DONE { color: var(--neon-green); }
+        .log-ERROR { color: var(--neon-red); }
+        .log-WARN { color: var(--neon-amber); }
+        .log-INFO { color: #cbd5e1; }
+
+        /* Output Box */
+        .output-area {
+            min-height: 140px;
+            color: var(--neon-green);
+        }
+
+        .file-upload-label {
+            cursor: pointer;
+            color: var(--neon-cyan);
+            font-size: 0.78rem;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="navbar">
+            <div class="brand">
+                <div class="brand-badge">ZT</div>
+                <div class="brand-text">
+                    <h1>ROBLOX AUTO CHANGEPASS</h1>
+                    <span>24/7 Working · MULTI-THREADED</span>
+                </div>
+            </div>
+            <a href="{{ discord_url }}" target="_blank" rel="noopener noreferrer" class="discord-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                </svg>
+                Tham Gia Discord
+            </a>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left Column: Configuration & Input -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><span class="dot"></span> Cấu Hình Chạy</div>
+                    <label class="file-upload-label">
+                        Tải lên file .txt
+                        <input type="file" id="accFileInput" accept=".txt" class="hidden">
+                    </label>
+                </div>
+
+                <!-- Mode Switch -->
+                <div class="mode-switch">
+                    <div class="mode-option active" id="modeDelayCard" onclick="selectMode('delay')">
+                        <div class="mode-option-title">
+                            <span>Option 1: Batch 5 Acc</span>
+                            <span class="mode-tag">NO PROXY</span>
+                        </div>
+                        <div class="mode-option-desc">Đổi 5 acc/lượt, tự nghỉ 30s rồi chạy tiếp cho đến khi hết danh sách.</div>
+                    </div>
+
+                    <div class="mode-option" id="modeProxyCard" onclick="selectMode('proxy')">
+                        <div class="mode-option-title">
+                            <span>Option 2: Proxy Turbo</span>
+                            <span class="mode-tag">FAST</span>
+                        </div>
+                        <div class="mode-option-desc">Chạy đa luồng tốc độ cao qua Proxy, không cần chờ đợi.</div>
+                    </div>
+                </div>
+
+                <!-- Accounts Input -->
+                <div class="form-group">
+                    <div class="label-row">
+                        <span>Danh sách tài khoản (user:pass:cookie)</span>
+                        <span class="badge-count" id="accCount">0 acc</span>
+                    </div>
+                    <textarea id="accountsInput" placeholder="username1:password1:_|WARNING:-DO-NOT-SHARE-THIS...&#10;username2:password2:_|WARNING:-DO-NOT-SHARE-THIS..."></textarea>
+                </div>
+
+                <!-- Proxy Section (Hidden in Delay Mode) -->
+                <div id="proxySection" class="hidden">
+                    <div class="form-group">
+                        <div class="label-row">
+                            <span>Danh sách Proxy (user:pass@ip:port hoặc ip:port:user:pass)</span>
+                            <span class="badge-count" id="proxyCount">0 proxy</span>
+                        </div>
+                        <textarea id="proxiesInput" style="min-height: 95px;" placeholder="user123:pass456@192.168.1.1:8080"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <div class="label-row">
+                            <span>Số luồng (Threads - Tối đa 50)</span>
+                        </div>
+                        <input type="number" id="threadsInput" min="1" max="50" value="15" placeholder="Mặc định: 15">
+                    </div>
+                </div>
+
+                <!-- Password Settings -->
+                <div class="row-2">
+                    <div class="form-group">
+                        <div class="label-row">
+                            <span>Kiểu mật khẩu mới</span>
+                        </div>
+                        <select id="passModeSelect" onchange="togglePassInput()">
+                            <option value="random">Ngẫu nhiên theo Prefix</option>
+                            <option value="custom">Mật khẩu cố định (Custom)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="prefixGroup">
+                        <div class="label-row">
+                            <span>Prefix mật khẩu</span>
+                        </div>
+                        <input type="text" id="prefixInput" value="TD" maxlength="6" placeholder="TD">
+                    </div>
+
+                    <div class="form-group hidden" id="customPassGroup">
+                        <div class="label-row">
+                            <span>Nhập mật khẩu mới (>= 8 ký tự)</span>
+                        </div>
+                        <input type="text" id="customPassInput" placeholder="NhapMatKhauMoi123">
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="startBtn" onclick="startProcess()">
+                        Bắt Đầu ChangePass
+                    </button>
+                    <button class="btn btn-danger" id="stopBtn" onclick="stopProcess()" disabled>
+                        Dừng
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Live Progress & Output -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><span class="dot" style="background: var(--neon-purple); box-shadow: 0 0 8px var(--neon-purple);"></span> Tiến Trình & Kết Quả</div>
+                    <button class="btn-sm" onclick="clearLogs()">Xóa Log</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-val" id="statProcessed" style="color: var(--neon-cyan);">0/0</div>
+                        <div class="stat-lbl">Đã xử lý</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-val" id="statSuccess" style="color: var(--neon-green);">0</div>
+                        <div class="stat-lbl">Thành công</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-val" id="statFailed" style="color: var(--neon-red);">0</div>
+                        <div class="stat-lbl">Thất bại</div>
+                    </div>
+                </div>
+
+                <div class="progress-wrap">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+
+                <!-- Terminal Logs -->
+                <div class="label-row">
+                    <span>Console Log</span>
+                    <span id="statusBadge" style="color: var(--text-secondary); font-size: 0.75rem;">Sẵn sàng</span>
+                </div>
+                <div class="terminal" id="terminalBox">
+                    <div class="log-line log-INFO">[SYSTEM] Sẵn sàng nhận danh sách tài khoản...</div>
+                </div>
+
+                <!-- Results -->
+                <div class="form-group" style="margin-bottom: 0;">
+                    <div class="label-row">
+                        <span>Tài khoản đổi thành công (user:newpass:newcookie)</span>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn-sm" onclick="copyResults()">Copy</button>
+                            <button class="btn-sm" onclick="downloadResults()">Tải .TXT</button>
+                        </div>
+                    </div>
+                    <textarea id="resultsOutput" class="output-area" readonly placeholder="Kết quả sẽ tự động hiển thị tại đây..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'delay';
+        let activeJobId = null;
+        let logOffset = 0;
+        let pollTimer = null;
+
+        const accountsInput = document.getElementById('accountsInput');
+        const proxiesInput = document.getElementById('proxiesInput');
+
+        accountsInput.addEventListener('input', () => {
+            const lines = accountsInput.value.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+            document.getElementById('accCount').textContent = `${lines.length} acc`;
+        });
+
+        proxiesInput.addEventListener('input', () => {
+            const lines = proxiesInput.value.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+            document.getElementById('proxyCount').textContent = `${lines.length} proxy`;
+        });
+
+        document.getElementById('accFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                accountsInput.value = evt.target.result;
+                accountsInput.dispatchEvent(new Event('input'));
+            };
+            reader.readAsText(file);
+        });
+
+        function selectMode(mode) {
+            currentMode = mode;
+            document.getElementById('modeDelayCard').classList.toggle('active', mode === 'delay');
+            document.getElementById('modeProxyCard').classList.toggle('active', mode === 'proxy');
+            document.getElementById('proxySection').classList.toggle('hidden', mode !== 'proxy');
+        }
+
+        function togglePassInput() {
+            const val = document.getElementById('passModeSelect').value;
+            document.getElementById('prefixGroup').classList.toggle('hidden', val !== 'random');
+            document.getElementById('customPassGroup').classList.toggle('hidden', val !== 'custom');
+        }
+
+        function appendLog(text) {
+            const box = document.getElementById('terminalBox');
+            const div = document.createElement('div');
+            div.className = 'log-line';
+            if (text.includes('[SUCCESS]') || text.includes('[DONE]')) div.classList.add('log-SUCCESS');
+            else if (text.includes('[ERROR]')) div.classList.add('log-ERROR');
+            else if (text.includes('[WARN]')) div.classList.add('log-WARN');
+            else div.classList.add('log-INFO');
+            div.textContent = text;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('terminalBox').innerHTML = '';
+        }
+
+        async function startProcess() {
+            const payload = {
+                accounts: accountsInput.value,
+                mode: currentMode,
+                proxies: proxiesInput.value,
+                pass_mode: document.getElementById('passModeSelect').value,
+                prefix: document.getElementById('prefixInput').value,
+                custom_password: document.getElementById('customPassInput').value,
+                threads: document.getElementById('threadsInput').value
+            };
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('resultsOutput').value = '';
+            clearLogs();
+
+            try {
+                const res = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (!data.ok) {
+                    appendLog(`[ERROR] ${data.error}`);
+                    document.getElementById('startBtn').disabled = false;
+                    return;
+                }
+
+                activeJobId = data.job_id;
+                logOffset = 0;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('statusBadge').textContent = 'Đang chạy...';
+                document.getElementById('statusBadge').style.color = '#06b6d4';
+                document.getElementById('statProcessed').textContent = `0/${data.total}`;
+                document.getElementById('statSuccess').textContent = '0';
+                document.getElementById('statFailed').textContent = '0';
+                document.getElementById('progressBar').style.width = '0%';
+
+                pollTimer = setInterval(pollJobStatus, 1200);
+            } catch (err) {
+                appendLog(`[ERROR] Không thể kết nối máy chủ: ${err.message}`);
+                document.getElementById('startBtn').disabled = false;
+            }
+        }
+
+        async function pollJobStatus() {
+            if (!activeJobId) return;
+            try {
+                const res = await fetch(`/api/status/${activeJobId}?offset=${logOffset}`);
+                const data = await res.json();
+                if (!data.ok) return;
+
+                data.logs.forEach(line => appendLog(line));
+                logOffset = data.next_offset;
+
+                document.getElementById('statProcessed').textContent = `${data.processed}/${data.total}`;
+                document.getElementById('statSuccess').textContent = data.success;
+                document.getElementById('statFailed').textContent = data.failed;
+
+                const pct = data.total > 0 ? Math.round((data.processed / data.total) * 100) : 0;
+                document.getElementById('progressBar').style.width = `${pct}%`;
+
+                if (data.status !== 'running') {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    document.getElementById('statusBadge').textContent = 'Hoàn tất';
+                    document.getElementById('statusBadge').style.color = '#10b981';
+                    document.getElementById('resultsOutput').value = data.results.join('\n');
+                }
+            } catch (e) {
+                // Bỏ qua lỗi mạng tạm thời khi polling
+            }
+        }
+
+        async function stopProcess() {
+            if (!activeJobId) return;
+            document.getElementById('stopBtn').disabled = true;
+            await fetch(`/api/stop/${activeJobId}`, { method: 'POST' });
+        }
+
+        function copyResults() {
+            const box = document.getElementById('resultsOutput');
+            if (!box.value) return;
+            navigator.clipboard.writeText(box.value);
+            appendLog('[INFO] Đã sao chép danh sách tài khoản thành công vào bộ nhớ tạm.');
+        }
+
+        function downloadResults() {
+            const content = document.getElementById('resultsOutput').value;
+            if (!content) return;
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `roblox_changed_${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
