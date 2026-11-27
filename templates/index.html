@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3TN HUB · Roblox Auto ChangePass 24/7</title>
+    <title>3TN · Roblox Auto ChangePass 24/7</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -30,7 +30,7 @@
 
         body {
             background-color: var(--bg-main);
-            background-image: 
+            background-image:
                 radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
                 radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.10) 0%, transparent 40%);
             color: var(--text-primary);
@@ -46,7 +46,6 @@
             padding: 18px 16px;
         }
 
-        /* Navbar */
         .navbar {
             display: flex;
             align-items: center;
@@ -118,7 +117,6 @@
             box-shadow: 0 6px 22px rgba(88, 101, 242, 0.6);
         }
 
-        /* Grid Layout */
         .main-grid {
             display: grid;
             grid-template-columns: 1.15fr 0.85fr;
@@ -164,7 +162,6 @@
             box-shadow: 0 0 8px var(--neon-cyan);
         }
 
-        /* Mode Selector Cards */
         .mode-switch {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -185,7 +182,6 @@
             padding: 14px;
             cursor: pointer;
             transition: all 0.2s ease;
-            position: relative;
         }
 
         .mode-option:hover {
@@ -226,7 +222,6 @@
             color: var(--text-secondary);
         }
 
-        /* Form Elements */
         .form-group {
             margin-bottom: 16px;
         }
@@ -288,7 +283,6 @@
             display: none !important;
         }
 
-        /* Buttons */
         .btn-group {
             display: flex;
             gap: 10px;
@@ -354,7 +348,6 @@
             color: var(--neon-cyan);
         }
 
-        /* Stats & Progress */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -399,7 +392,6 @@
             transition: width 0.3s ease;
         }
 
-        /* Console Terminal */
         .terminal {
             background: #07080d;
             border: 1px solid var(--border-color);
@@ -423,7 +415,6 @@
         .log-WARN { color: var(--neon-amber); }
         .log-INFO { color: #cbd5e1; }
 
-        /* Output Box */
         .output-area {
             min-height: 140px;
             color: var(--neon-green);
@@ -439,13 +430,12 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="navbar">
             <div class="brand">
                 <div class="brand-badge">3TN</div>
                 <div class="brand-text">
                     <h1>ROBLOX AUTO CHANGEPASS</h1>
-                    <span>24/7 Working · MULTI-THREADED</span>
+                    <span>Working 24/7 · MULTI-THREADED</span>
                 </div>
             </div>
             <a href="{{ discord_url }}" target="_blank" rel="noopener noreferrer" class="discord-btn">
@@ -457,7 +447,6 @@
         </header>
 
         <div class="main-grid">
-            <!-- Left Column: Configuration & Input -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title"><span class="dot"></span> Cấu Hình Chạy</div>
@@ -467,14 +456,13 @@
                     </label>
                 </div>
 
-                <!-- Mode Switch -->
                 <div class="mode-switch">
                     <div class="mode-option active" id="modeDelayCard" onclick="selectMode('delay')">
                         <div class="mode-option-title">
-                            <span>Option 1: Spam + Delay 60s</span>
+                            <span>Option 1: Retry 60s</span>
                             <span class="mode-tag">NO PROXY</span>
                         </div>
-                        <div class="mode-option-desc">Spam liên tục tới hết acc; dính limit tự nghỉ 60s rồi chạy tiếp.</div>
+                        <div class="mode-option-desc">Bị limit nghỉ 60s rồi đổi tiếp tới khi đổi được acc mới qua acc kế.</div>
                     </div>
 
                     <div class="mode-option" id="modeProxyCard" onclick="selectMode('proxy')">
@@ -486,7 +474,6 @@
                     </div>
                 </div>
 
-                <!-- Accounts Input -->
                 <div class="form-group">
                     <div class="label-row">
                         <span>Danh sách tài khoản (user:pass:cookie)</span>
@@ -495,7 +482,6 @@
                     <textarea id="accountsInput" placeholder="username1:password1:_|WARNING:-DO-NOT-SHARE-THIS...&#10;username2:password2:_|WARNING:-DO-NOT-SHARE-THIS..."></textarea>
                 </div>
 
-                <!-- Proxy Section (Hidden in Delay Mode) -->
                 <div id="proxySection" class="hidden">
                     <div class="form-group">
                         <div class="label-row">
@@ -512,7 +498,6 @@
                     </div>
                 </div>
 
-                <!-- Password Settings -->
                 <div class="row-2">
                     <div class="form-group">
                         <div class="label-row">
@@ -528,7 +513,7 @@
                         <div class="label-row">
                             <span>Prefix mật khẩu</span>
                         </div>
-                        <input type="text" id="prefixInput" value="3TN" maxlength="6" placeholder="TD">
+                        <input type="text" id="prefixInput" value="3TN" maxlength="6" placeholder="3TN">
                     </div>
 
                     <div class="form-group hidden" id="customPassGroup">
@@ -539,7 +524,6 @@
                     </div>
                 </div>
 
-                <!-- Action Buttons -->
                 <div class="btn-group">
                     <button class="btn btn-primary" id="startBtn" onclick="startProcess()">
                         Bắt Đầu ChangePass
@@ -550,7 +534,6 @@
                 </div>
             </div>
 
-            <!-- Right Column: Live Progress & Output -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title"><span class="dot" style="background: var(--neon-purple); box-shadow: 0 0 8px var(--neon-purple);"></span> Tiến Trình & Kết Quả</div>
@@ -576,7 +559,6 @@
                     <div class="progress-bar" id="progressBar"></div>
                 </div>
 
-                <!-- Terminal Logs -->
                 <div class="label-row">
                     <span>Console Log</span>
                     <span id="statusBadge" style="color: var(--text-secondary); font-size: 0.75rem;">Sẵn sàng</span>
@@ -585,7 +567,6 @@
                     <div class="log-line log-INFO">[SYSTEM] Sẵn sàng nhận danh sách tài khoản...</div>
                 </div>
 
-                <!-- Results -->
                 <div class="form-group" style="margin-bottom: 0;">
                     <div class="label-row">
                         <span>Tài khoản đổi thành công (user:newpass:newcookie)</span>
@@ -733,7 +714,6 @@
                     document.getElementById('resultsOutput').value = data.results.join('\n');
                 }
             } catch (e) {
-                // Bỏ qua lỗi mạng tạm thời khi polling
             }
         }
 
